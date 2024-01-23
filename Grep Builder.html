@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grep Generator</title>
+
+   <!-- Add the link to the Roboto font -->
+   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+   <style>
+     /* Apply Roboto font to all text on the page */
+     body {
+       font-family: 'Roboto', sans-serif;
+     }
+
+     /* Additional styling for the output container */
+     #outputContainer {
+       border: 1px solid #ccc;
+       padding: 10px;
+       margin-top: 20px;
+       position: absolute;
+       bottom: 10px;
+       width: 80%; /* Adjust the width as needed */
+       background-color: #f8f8f8; /* Optional background color */
+     }
+
+     /* Styling for the copy button */
+     #copyButton {
+       margin-top: 10px;
+       padding: 5px 10px;
+       cursor: pointer;
+     }
+   </style>
+</head>
+<body>
+
+<h1>Grep Builder</h1>
+
+<select id="logType" onchange="updatePromptText(); toggleInputBox();">
+  <option value="inputLogType" selected disabled hidden>Input Log Type</option>
+  <option value="rm-webphoned">rm-webphoned</option>
+  <option value="rm-notifier">rm-notifier</option>
+  <option value="rm-sapien">rm-sapien</option>
+  <option value="opensips">opensips</option>
+  <option value="rm-freeswitch">rm-freeswitch</option>
+  <option value="rm-fscallcentermonitor">rm-fscallcentermonitor</option>
+  <option value="rm-fsxinetdsocket">rm-fsxinetdsocket</option>
+  <option value="notSure">I'm not sure</option>
+</select>
+
+<br><br>
+
+<label for="dataCentre" id="dataCentreLabel" style="display: none;">Which Data Centre is the log on?</label>
+<select id="dataCentre" style="display: none;">
+  <option value="inputLogType" selected disabled hidden>Input Data Centre</option>
+  <option value="s01">s01</option>
+  <option value="s02">s02</option>
+  <option value="Unsure">Unsure</option>
+</select>
+
+<br><br>
+
+<label for="searchString" id="promptText" style="display: none;"></label>
+<input type="text" id="searchString" style="display: none;" placeholder="" onkeydown="handleEnterKey(event)" size="50">
+
+<br><br>
+
+<div id="zipCheckboxContainer" style="display: none;">
+    <label for="isZipped">Is the requested log zipped (created before 04:00 AM today)?</label>
+    <input type="checkbox" id="isZipped" onclick="toggleDateInput();">
+</div>
+
+<br><br>
+
+<div id="dateInputContainer" style="display: none;">
+  <label for="inputDate">Input date of call:</label>
+  <input type="text" id="inputDate" placeholder="yyyy-mm-dd" size="10">
+</div>
+
+<br><br>
+
+<label for="generateButton">Generate grep</label>
+<button id="generateButton" onclick="generateGrepCommand()">Generate grep</button>
+
+<!-- Output container moved to the bottom of the page -->
+<div id="outputContainer" style="display: none;">
+    <p id="outputCommand"></p>
+    <button id="copyButton" onclick="copyToClipboard()">Copy</button>
+</div>
+
+<script>
+    var dataCentreDropdown = document.getElementById("dataCentre");
+    var dataCentre;
+    var isDataCentre; // New variable to determine if s01 or s02 is selected
+    
+    dataCentreDropdown.addEventListener("change", function() {
+      // Update the dataCentre variable when the dropdown value changes
+      dataCentre = dataCentreDropdown.value;
+      
+      // Update isDataCentre based on the selected value
+      isDataCentre = dataCentre === "s01" || dataCentre === "s02";
+    });
+
+    function updatePromptText() {
+  var logType = document.getElementById("logType").value;
+  var promptText = document.getElementById("promptText");
+  var inputBox = document.getElementById("searchString");
+  var zipCheckboxContainer = document.getElementById("zipCheckboxContainer");
+  var dateInputContainer = document.getElementById("dateInputContainer");
+  var dataCentreLabel = document.getElementById("dataCentreLabel");
+  var dataCentre = document.getElementById("dataCentre");
+  
+  // Define isZippedCheckbox here
+  var isZippedCheckbox = document.getElementById("isZipped");
+
+  switch (logType) {
+    case "rm-webphoned":
+      promptText.textContent = "Enter phone number or log ID without W/L:";
+      inputBox.placeholder = "e.g., 1234567890 or 4015110";
+      zipCheckboxContainer.style.display = "block"; // Show the checkbox for "rm-webphoned"
+      dateInputContainer.style.display = "none"; // Hide date input for "rm-webphoned"
+      dataCentreLabel.style.display = "none"; // Show data centre label for "rm-webphoned"
+      dataCentre.style.display = "none"; // Show data centre picklist for "rm-webphoned"
+      break;
+    case "rm-notifier":
+      promptText.textContent = "Enter SIP address of user:";
+      inputBox.placeholder = "e.g., 12000@josh-007942.sip.natterbox.com";
+      zipCheckboxContainer.style.display = "none"; // Hide the checkbox for "rm-notifier"
+      dateInputContainer.style.display = "none"; // Hide date input for "rm-notifier"
+      dataCentreLabel.style.display = "block"; // Show data centre label for "rm-notifier"
+      dataCentre.style.display = "block"; // Show data centre picklist for "rm-notifier"
+      break;
+    case "rm-sapien":
+      promptText.textContent = "Enter org ID:";
+      inputBox.placeholder = "e.g., 4090";
+      zipCheckboxContainer.style.display = "none"; // Hide the checkbox for "rm-sapien"
+      dateInputContainer.style.display = "none"; // Hide date input for "rm-sapien"
+      dataCentreLabel.style.display = "none"; // Show data centre label for "rm-sapien"
+      dataCentre.style.display = "none"; // Show data centre picklist for "rm-sapien"
+      break;
+      case "opensips":
+      promptText.textContent = "Enter phone number or Call-ID:";
+      inputBox.placeholder = "e.g., 1234567890 or ee9a48ec-y193-11ee-8md8-e90b36c01e96";
+      zipCheckboxContainer.style.display = "block"; // Show the checkbox for "opensips"
+      dateInputContainer.style.display = isZippedCheckbox.checked ? "block" : "none"; // Show/hide date input based on checkbox
+      dataCentreLabel.style.display = "block"; // Show data centre label for "opensips"
+      dataCentre.style.display = "block"; // Show data centre picklist for "opensips"
+      break;
+    case "rm-freeswitch":
+      promptText.textContent = "Enter call AUUID:";
+      inputBox.placeholder = "e.g., ee9a48ec-y193-11ee-8md8-e90b36c01e96";
+      zipCheckboxContainer.style.display = "block"; // Show the checkbox for "rm-freeswitch"
+      dateInputContainer.style.display = isZippedCheckbox.checked ? "block" : "none"; // Show/hide date input based on checkbox
+      dataCentreLabel.style.display = "block"; // Show data centre label for "rm-freeswitch"
+      dataCentre.style.display = "block"; // Show data centre picklist for "rm-freeswitch"
+      break;
+    case "rm-fscallcentermonitor":
+      promptText.textContent = "Enter call AUUID:";
+      inputBox.placeholder = "e.g., ee9a48ec-y193-11ee-8md8-e90b36c01e96";
+      zipCheckboxContainer.style.display = "block"; // Show the checkbox for "rm-fscallcentermonitor"
+      dateInputContainer.style.display = isZippedCheckbox.checked ? "block" : "none"; // Show/hide date input based on checkbox
+      dataCentreLabel.style.display = "block"; // Show data centre label for "rm-fscallcentermonitor"
+      dataCentre.style.display = "block"; // Show data centre picklist for "rm-fscallcentermonitor"
+      break;
+    case "rm-fsxinetdsocket":
+      promptText.textContent = "Enter call AUUID:";
+      inputBox.placeholder = "e.g., ee9a48ec-y193-11ee-8md8-e90b36c01e96";
+      zipCheckboxContainer.style.display = "block"; // Show the checkbox for "rm-fsxinetdsocket"
+      dateInputContainer.style.display = isZippedCheckbox.checked ? "block" : "none"; // Show/hide date input based on checkbox
+      dataCentreLabel.style.display = "none"; // Show data centre label for "rm-fsxinetdsocket"
+      dataCentre.style.display = "block"; // Show data centre picklist for "rm-fsxinetdsocket"
+      default:
+      promptText.textContent = "";
+      inputBox.placeholder = "";
+      zipCheckboxContainer.style.display = "none"; // Hide the checkbox for other log types
+      dateInputContainer.style.display = "none"; // Hide date input for other log types
+      dataCentreLabel.style.display = "block"; // Show data centre label for other log types
+      dataCentre.style.display = "block"; // Show data centre picklist for other log types
+  }
+}
+
+function toggleInputBox() {
+  var logType = document.getElementById("logType").value;
+  var inputBox = document.getElementById("searchString");
+  var promptText = document.getElementById("promptText");
+  var isZippedCheckbox = document.getElementById("isZipped");
+  var zipCheckboxContainer = document.getElementById("zipCheckboxContainer");
+  var dateInputContainer = document.getElementById("dateInputContainer");
+
+  if (logType === "notSure") {
+    inputBox.style.display = "none";
+    promptText.style.display = "block";
+    isZippedCheckbox.style.display = "none"; // Hide the checkbox for "notSure" option
+    zipCheckboxContainer.style.display = "none"; // Hide the container for other log types
+    toggleDateInput(); // Ensure date input is hidden for "notSure"
+    inputBox.value = "";  // Clear any existing value in the input box
+    promptText.innerHTML = 'Please refer to guide and choose the required log type: <a href="https://docs.google.com/document/d/1N2oBlBVD8Kx0qzZl-OSuRHt-TEYQiqweUievbtdUWjU/edit?usp=sharing" target="_blank">Log Type Guide</a>';
+  } else {
+    inputBox.style.display = "block";
+    promptText.style.display = "block";
+    isZippedCheckbox.style.display = "block"; // Show the checkbox for other options
+    zipCheckboxContainer.style.display = "block"; // Show the container for other log types
+    toggleDateInput(); // Show/hide date input based on checkbox
+    inputBox.focus();
+  }
+}
+
+// Function to copy the output to the clipboard
+// Function to copy the output to the clipboard
+function copyToClipboard() {
+    var grepCommand = document.getElementById("outputCommand").textContent;
+    
+    // Extract the actual command
+    var commandParts = grepCommand.split(": ");
+    var commandToCopy = commandParts.length > 1 ? commandParts[1] : grepCommand;
+
+    var tempInput = document.createElement("input");
+    document.body.appendChild(tempInput);
+    tempInput.value = commandToCopy.trim();
+    tempInput.select();
+    document.execCommand("copy");
+    document.body.removeChild(tempInput);
+    alert("Command copied to clipboard!");
+}
+
+function toggleDateInput() {
+  var dateInputContainer = document.getElementById("dateInputContainer");
+  var isZippedCheckbox = document.getElementById("isZipped");
+
+  dateInputContainer.style.display = isZippedCheckbox.checked ? "block" : "none";
+}
+
+function handleEnterKey(event) {
+  if (event.key === "Enter") {
+    generateGrepCommand();
+  }
+}
+
+function removeDefaultOption() {
+  var defaultOption = document.getElementById("logType").options[0];
+  defaultOption.style.display = "none";
+}
+
+function generateGrepCommand() {
+  var logType = document.getElementById("logType").value;
+  var searchString = document.getElementById("searchString").value.trim(); // Trim to remove leading/trailing whitespaces
+  var isZipped = document.getElementById("isZipped").checked;
+  var inputDate = document.getElementById("inputDate").value.trim(); // Trim to remove leading/trailing whitespaces
+
+  // New variable isDataCentre to determine if s01 or s02 is selected
+  var isDataCentre = dataCentre === "s01" || dataCentre === "s02";
+
+  // Check if logType, searchString, or inputDate is empty
+  if (!logType || !searchString || !inputDate) {
+    alert("Please input all required data.");
+    return;
+  }
+
+
+  var grepCommand = "";
+
+  switch (logType) {
+    case "rm-webphoned":
+      grepCommand = isZipped ? "zgrep " : "grep ";
+      grepCommand += searchString + " /var/log/app/rm-webphoned.log";
+      if (isZipped && inputDate) {
+        grepCommand += "-" + inputDate + ".gz";
+      }
+      break;
+    case "rm-notifier":
+      grepCommand = isZipped ? "zgrep " : 'grep "';
+      grepCommand += searchString + '" /var/log/app/rm-notifier-' + (isDataCentre ? dataCentre : "*") + 'ntf*.log';
+      if (isZipped && inputDate) {
+      grepCommand += "-" + inputDate + ".gz";
+      }
+      break;
+    case "rm-sapien":
+      grepCommand = isZipped ? "zgrep \\/" : 'grep "\\/';
+      grepCommand += searchString + '\\/" /var/log/app/rm-sapien.log';
+      if (isZipped && inputDate) {
+      grepCommand += "-" + inputDate + ".gz";
+      }
+      break;
+    case "opensips":
+      grepCommand = isZipped ? "zgrep " : "grep ";
+      grepCommand += searchString + " /var/log/app/opensips-" + (isDataCentre ? dataCentre : "*") + "sip*.log";
+      if (isZipped && inputDate) {
+        grepCommand += "-" + inputDate + ".gz";
+      }
+      break;
+    case "rm-freeswitch":
+      grepCommand = isZipped ? "zgrep " : "grep ";
+      grepCommand += searchString + " /var/log/app/freeswitch-" + (isDataCentre ? dataCentre : "*") + "pbx*.log";
+      if (isZipped && inputDate) {
+        grepCommand += "-" + inputDate + ".gz";
+      }
+      break;
+    case "rm-fscallcentermonitor":
+      grepCommand = isZipped ? "zgrep " : 'grep "';
+      grepCommand += searchString + '" /var/log/app/rm-fscallcentermonitor-' + (isDataCentre ? dataCentre : "???pbx??") + '.log';
+      if (isZipped && inputDate) {
+        grepCommand += "-" + inputDate + ".gz";
+      }
+      break;
+    case "rm-fsxinetdsocket":
+      grepCommand = isZipped ? "zgrep " : "grep ";
+      grepCommand += searchString + " /var/log/app/rm-fsxinetdsocket.log";
+      if (isZipped && inputDate) {
+        grepCommand += "-" + inputDate + ".gz";
+      }
+      break;
+    case "notSure":
+      grepCommand = "Log type not sure. Please refer to the guide.";
+      break;
+    default:
+      grepCommand = "Invalid log type";
+  }
+
+  // Display the output at the bottom of the page
+  document.getElementById("outputCommand").textContent = "Generated Grep Command: " + grepCommand;
+  document.getElementById("outputContainer").style.display = "block";
+}
+
+</script>
+
+</body>
+</html>
