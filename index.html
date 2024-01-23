@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Grep Builder</title>
+  <title>Grep Generator</title>
 
    <!-- Add the link to the Roboto font -->
    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
@@ -170,7 +171,8 @@
       dateInputContainer.style.display = isZippedCheckbox.checked ? "block" : "none"; // Show/hide date input based on checkbox
       dataCentreLabel.style.display = "none"; // Show data centre label for "rm-fsxinetdsocket"
       dataCentre.style.display = "block"; // Show data centre picklist for "rm-fsxinetdsocket"
-      default:
+      break;
+    default:
       promptText.textContent = "";
       inputBox.placeholder = "";
       zipCheckboxContainer.style.display = "none"; // Hide the checkbox for other log types
@@ -244,15 +246,18 @@ function removeDefaultOption() {
 
 function generateGrepCommand() {
   var logType = document.getElementById("logType").value;
-  var searchString = document.getElementById("searchString").value.trim(); // Trim to remove leading/trailing whitespaces
+  var searchString = document.getElementById("searchString").value.trim();
   var isZipped = document.getElementById("isZipped").checked;
-  var inputDate = document.getElementById("inputDate").value.trim(); // Trim to remove leading/trailing whitespaces
+  
+  // Check if the date input container is visible
+  var dateInputContainer = document.getElementById("dateInputContainer");
+  var inputDate = dateInputContainer.style.display === "block" ? document.getElementById("inputDate").value.trim() : "";
 
   // New variable isDataCentre to determine if s01 or s02 is selected
   var isDataCentre = dataCentre === "s01" || dataCentre === "s02";
 
-  // Check if logType, searchString, or inputDate is empty
-  if (!logType || !searchString || !inputDate) {
+  // Check if logType or searchString is empty
+  if (!logType || !searchString) {
     alert("Please input all required data.");
     return;
   }
